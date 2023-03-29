@@ -13,36 +13,88 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Use this link to get the GeoJSON data.
 var link = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson";
 
-// Function to change color of markers depending on magnitude
-function chooseColor(magnitude) {
-  if (magnitude > 90) return "yellow";
-  else if (magnitude > 70) return "red";
-  else if (magnitude > 50) return "orange";
-  else if (magnitude > 30) return "green";
-  else if (magnitude > 10) return "purple";
-  else return "black";
+// Function to change color of markers depending on depth
+function chooseColor(depth) {
+  if (depth > 90) return "darkred";
+  else if (depth > 70) return "red";
+  else if (depth > 50) return "orange";
+  else if (depth > 30) return "yellow";
+  else if (depth > 10) return "green";
+  else return "lightgreen";
 }
 
+// Function to change color of markers depending on magnitude
+function chooseSize(magnitude) {
+  if (magnitude < 1.0) return 10;
+  else if (magnitude < 2.0) return 15;
+  else if (magnitude < 3.0) return 20;
+  else if (magnitude < 4.0) return 25;
+  else if (magnitude < 5.0) return 30;
+  else if (magnitude < 6.0) return 35;
+  else if (magnitude < 7.0) return 40;
+  else if (magnitude < 8.0) return 45;
+  else return 50;
+}
 
-
-// Getting our GeoJSON data
-d3.json(link).then(function(data) {
-  // Creating a GeoJSON layer with the retrieved data
+//Map and get data
+d3.json(link).then(data =>{
+  //get info
   console.log(data);
-  //L.geoJson(data).addTo(myMap);
-  //var markers = L.markerClusterGroup();
+  data.features.forEach(element =>{
+    var marker = L.circleMarker([element.geometry.coordinates[1],element.geometry.coordinates[0]],{
+        radius: chooseSize(element.properties.mag),
+        color: "white",
+        fillColor: chooseColor(element.geometry.coordinates[2]),
+        fillOpacity: 0.5,
+        weight: 1.5
+    }).addTo(map);
 
-  for (var i = 0; i < data.length; i++) {
-    var longitude = data[i].features.geometry.coordinates[0]
-    var latitude = data[i].features.geometry.coordinates[1]
-    console.log(longitude,latitude);
-    L.marker([longitude, latitude]).addTo(map);
-    //  // Check for the location property.
-    //  if (features) {
-    //   // Add a new marker to the cluster group, and bind a popup.
-    //   markers.addLayer(L.marker([longitude, latitude]);//.bindPopup(response[i].descriptor));
-    // };
-
-  }
+    //Popup title 
+    marker.bindPopup(element.properties.title)
+  });
 });
-// console.log("working");
+
+//Legend
+let legend = L.control({
+  position: 'bottomright'
+});
+
+//List of things that the
+depth_legend_limit = [ -10, 10, 30, 50, 70, "+90"]
+colors_legend= ["lightgreen","green","yellow","orange","red", "darkred"]
+
+legend.onAdd = function() {
+  // create a div tag to keep it organized
+  let div = L.DomUtil.create('div', 'info legend');
+  var limits = depth_legend_limit;
+  var colors = colors_legend;
+  var labels= [];
+
+  // add the colors and mag_range, maybe using a for loop
+  
+  // for (var i = 0; i < depth_legend_limit.length; i++) {
+  //   var legendInfo = "<div class=\"labels\">" +
+  //         "<div class=\"min\">" + limits[i] + "</div>" +
+  //         "<div class=\"max\">" + limits[limits.length + 1] + "</div>" +
+  //       "</div>";
+  // }
+  var legendInfo = "<div class=\"labels\">" +
+          "<div class=\"min\">" + limits[0] + "</div>" +
+          // "<div class=\"secondval\">" + limits[1] + "</div>" +
+          // "<div class=\"thirdval\">" + limits[2] + "</div>" +
+          // "<div class=\"fourthval\">" + limits[3] + "</div>" +
+          // "<div class=\"fifthval\">" + limits[4] + "</div>" +
+          "<div class=\"max\">" + limits[limits.length - 1] + "</div>" +
+        "</div>";
+    div.innerHTML = legendInfo;
+    
+    limits.forEach(function(limit, index) {
+      labels.push("<li style=\"background-color: " + colors[index] + "\"></li>");
+    });
+
+    div.innerHTML += "<ul>" + labels.join("") + "</ul>";
+
+
+  return div; 
+};
+legend.addTo(map);
